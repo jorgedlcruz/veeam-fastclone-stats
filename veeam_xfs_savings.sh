@@ -23,9 +23,9 @@
 # Endpoint URL for InfluxDB
 veeamInfluxDBURL="http://YOURINFLUXSERVERIP" #Your InfluxDB Server, http://FQDN or https://FQDN if using SSL
 veeamInfluxDBPort="8086" #Default Port
-veeamInfluxDB="telegraf" #Default Database
-veeamInfluxDBUser="USER" #User for Database
-veeamInfluxDBPassword='PASSWORD' #Password for Database
+YOUR_ORG="Organization"
+YOUR_BUCKET="Bucket"
+YOUR_TOKEN="Token"
 veeamXFSMount="/backups/" #Your XFS mount point
 veeamRepoName="VEEAM-XFS-001" #Your XFS Repo Name in Veeam Backup & Replication Server
 type="XFS"
@@ -34,7 +34,7 @@ type="XFS"
 for f in $veeamXFSMount*; do
     if [ -d "$f" ]; then
         backupjobname=$(echo $f | awk -F"$veeamXFSMount" '{print $2}')
-        totaldisk=$(du $f | awk '{ print $1 }')
+        totaldisk=$(du -s $f | awk '{ print $1 }')
         totalconsumed=$(df $f | awk '$4 ~ /[[:digit:]]+/ { print $3 }')
         
         ##Un-comment the following echo for debugging
@@ -42,6 +42,6 @@ for f in $veeamXFSMount*; do
         
         ##Comment the Curl while debugging
         echo "Writing veeam_xfs_savings to InfluxDB"
-        curl -i -XPOST "$veeamInfluxDBURL:$veeamInfluxDBPort/write?precision=s&db=$veeamInfluxDB" -u "$veeamInfluxDBUser:$veeamInfluxDBPassword" --data-binary "veeam_fastclone_stats,repoxfs=$veeamRepoName,type=$type,backupxfs=$backupjobname totaldisk=$totaldisk,realconsumed=$totalconsumed"
+        curl -XPOST "$veeamInfluxDBURL:$veeamInfluxDBPort/api/v2/write?org=$YOUR_ORG&bucket=$YOUR_BUCKET&precision=s" --header "Authorization: Token $YOUR_TOKEN" --header "Content-Type: text/plain; charset=utf-8" --header "Accept: application/json" --data-binary "veeam_fastclone_stats,repoxfs=$veeamRepoName,type=$type,backupxfs=$backupjobname totaldisk=$totaldisk,realconsumed=$totalconsumed"
     fi
 done
